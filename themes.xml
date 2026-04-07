@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FpsHud" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#00FF9D</item>
+        <item name="colorPrimaryVariant">#00CC7A</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorSurface">#0A0A0F</item>
+        <item name="android:windowBackground">#0A0A0F</item>
+    </style>
+</resources>
