@@ -1,0 +1,6 @@
+id=fox_live_fps
+name=Live FPS Overlay
+version=v1.0
+versionCode=1
+author=Fox
+description=Displays a live FPS overlay using app_process.
