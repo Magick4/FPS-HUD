@@ -2,7 +2,10 @@ name: Build KernelSU Module
 
 on:
   push:
-    branches: [ ksu-module ]
+    branches: [ main, ksu-module ]
+    paths:
+      - 'ksu-module/**'
+      - '.github/workflows/build-ksu.yml'
   workflow_dispatch:
 
 jobs:

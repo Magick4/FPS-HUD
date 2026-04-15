@@ -3,7 +3,10 @@ name: Build FPS HUD APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:        # lets you trigger a build manually from the GitHub UI
+    paths-ignore:
+      - 'ksu-module/**'
+      - '.github/workflows/build-ksu.yml'
+  workflow_dispatch:
 
 jobs:
   build:
