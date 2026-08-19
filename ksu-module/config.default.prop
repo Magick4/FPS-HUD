@@ -44,8 +44,9 @@ color_ok=#FFC107
 color_bad=#FF5252
 
 # window layer: secure | system | overlay
-#   secure  - highest layer, hidden from screenshots/recordings
-#   overlay - normal app overlay, shows up in screen recordings
+#   secure  - top layer, but Android strips it from screenshots/recordings
+#   system  - top layer and captured by screenshots/recordings
+#   overlay - ordinary app overlay, fallback for picky ROMs
 window_type=secure
 
 # seconds to wait after boot before showing the HUD

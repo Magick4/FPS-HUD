@@ -32,8 +32,8 @@ straight into `WindowManager` and keeps it above games, video and the launcher.
 
 ## Install
 
-1. Grab `fox_live_fps-vX.Y.Z.zip` from the
-   [Actions artifacts](../../actions/workflows/build-ksu.yml) (or a release).
+1. Grab the flashable zip: [`dist/fox_live_fps-v2.0.0.zip`](dist/) (prebuilt), or
+   from the [Actions artifacts](../../actions/workflows/build-ksu.yml).
 2. KernelSU-Next → **Modules → Install from storage** → pick the zip.
 3. Reboot (or run `su -c "fpshud start"` right away).
 4. Tap **WebUI** on the module card to configure it, or **Action** to toggle it.
@@ -103,8 +103,9 @@ the overlay notices the file changed and repaints without restarting.
 | `boot_delay` | `10` | seconds to wait after boot |
 
 **Screen recordings:** `secure` sits on the highest layer but Android strips it
-from screenshots and recordings. Switch the layer to `overlay` (App) in the
-WebUI if you want the counter captured.
+from screenshots and recordings. Switch the layer to `system` in the WebUI if
+you want the counter captured; `overlay` is a fallback for ROMs that reject the
+other two. The overlay tries all three in order and logs which one stuck.
 
 ## Troubleshooting
 
@@ -113,7 +114,7 @@ WebUI if you want the counter captured.
 | Nothing appears | `su -c "fpshud log"` — the log says which window type was rejected and why |
 | Shows `--` | No kernel node and vsync isn't ticking; try `fpshud set source vsync`, or check `fpshud probe` |
 | Reads 0 while idle | Normal: `measured_fps` reports 0 when the panel isn't committing frames |
-| Not in screen recordings | `fpshud set window_type overlay` |
+| Not in screen recordings | `fpshud set window_type system` |
 | Gone after an update | Module updates keep `/data/adb/fox_live_fps/config.prop`; just reboot |
 
 ## Layout

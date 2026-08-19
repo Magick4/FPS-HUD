@@ -1,5 +1,6 @@
 # build output
 ksu-module/build/
+ksu-module/fox_live_fps.zip
 *.dex
 *.class
-*.zip
+!dist/*.zip

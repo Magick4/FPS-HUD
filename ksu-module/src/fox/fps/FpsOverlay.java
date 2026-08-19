@@ -130,6 +130,10 @@ public final class FpsOverlay {
                 } else {
                     if (hud == null) {
                         attach();
+                    } else if (!hud.isAttachedToWindow()) {
+                        log("window disappeared, re-attaching");
+                        detach();
+                        attach();
                     }
                     render();
                 }
@@ -269,7 +273,11 @@ public final class FpsOverlay {
         attachedWindowType = -1;
     }
 
-    /** TYPE_SECURE_SYSTEM_OVERLAY / TYPE_SYSTEM_OVERLAY / TYPE_APPLICATION_OVERLAY. */
+    /**
+     * 2015 TYPE_SECURE_SYSTEM_OVERLAY - top layer, stripped from screen capture.
+     * 2006 TYPE_SYSTEM_OVERLAY        - top layer, shows up in recordings.
+     * 2038 TYPE_APPLICATION_OVERLAY   - needs app-op attribution, last resort.
+     */
     private static int[] windowTypeChain(String preferred) {
         if ("overlay".equals(preferred)) {
             return new int[]{2038, 2015, 2006};
@@ -316,14 +324,14 @@ public final class FpsOverlay {
 
     private static int gravityOf(String position) {
         int v = Gravity.TOP;
-        int h = Gravity.START;
+        int h = Gravity.LEFT;
         if (position.startsWith("bottom")) {
             v = Gravity.BOTTOM;
         } else if (position.startsWith("middle")) {
             v = Gravity.CENTER_VERTICAL;
         }
         if (position.endsWith("right")) {
-            h = Gravity.END;
+            h = Gravity.RIGHT;
         } else if (position.endsWith("center")) {
             h = Gravity.CENTER_HORIZONTAL;
         }

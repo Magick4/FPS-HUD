@@ -142,9 +142,9 @@ const cssColor = (c, extraAlpha) => {
 
 /* --------------------------------------------------------------- binding */
 
-function bindSlider(id, fmt, transform) {
+function bindSlider(id, fmt, transform, outId) {
   const el = $(id);
-  const out = $(id + 'Out');
+  const out = $(outId || id + 'Out');
   const write = (commit) => {
     const v = transform ? transform(el.value) : el.value;
     if (out) out.textContent = fmt(el.value);
@@ -186,8 +186,8 @@ function wire() {
   bindSlider('bg_radius', (v) => v + ' dp');
   bindSlider('interval', (v) => v + ' ms');
   bindSlider('opacity', (v) => v + '%', (v) => (v / 100).toFixed(2));
-  bindSlider('padding_h', () => padText(), null);
-  bindSlider('padding_v', () => padText(), null);
+  bindSlider('padding_h', () => padText(), null, 'padOut');
+  bindSlider('padding_v', () => padText(), null, 'padOut');
 
   bindSeg('decimals');
   bindSeg('source');
