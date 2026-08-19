@@ -142,4 +142,10 @@ ksu-module/
 └── build.sh               javac + d8 + zip
 ```
 
+CI builds the zip on every push to `main`/`ksu-module` (Actions → *Build
+KernelSU Module* → *Run workflow* also builds any other branch on demand).
+An upgraded workflow — API 36, PR builds, package verification, release
+uploads — is parked in [`ci/build-ksu.yml`](ci/build-ksu.yml); copy it over
+`.github/workflows/build-ksu.yml` to use it.
+
 Licensed under the GPL — see [LICENSE](LICENSE).
