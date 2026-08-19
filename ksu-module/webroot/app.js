@@ -25,6 +25,7 @@ const DEFAULTS = {
   color_ok: '#FFC107',
   color_bad: '#FF5252',
   window_type: 'secure',
+  fps_period_ms: '0',
   boot_delay: '10'
 };
 
@@ -185,6 +186,7 @@ function wire() {
   bindSlider('text_size', (v) => v + ' sp');
   bindSlider('bg_radius', (v) => v + ' dp');
   bindSlider('interval', (v) => v + ' ms');
+  bindSlider('fps_period_ms', (v) => (+v === 0 ? 'kernel default' : v + ' ms'));
   bindSlider('opacity', (v) => v + '%', (v) => (v / 100).toFixed(2));
   bindSlider('padding_h', () => padText(), null, 'padOut');
   bindSlider('padding_v', () => padText(), null, 'padOut');
@@ -275,6 +277,9 @@ function paint() {
   put('text_size', cfg.text_size); $('text_sizeOut').textContent = cfg.text_size + ' sp';
   put('bg_radius', cfg.bg_radius); $('bg_radiusOut').textContent = cfg.bg_radius + ' dp';
   put('interval', cfg.interval); $('intervalOut').textContent = cfg.interval + ' ms';
+  put('fps_period_ms', cfg.fps_period_ms);
+  $('fps_period_msOut').textContent = +cfg.fps_period_ms === 0
+    ? 'kernel default' : cfg.fps_period_ms + ' ms';
   put('padding_h', cfg.padding_h);
   put('padding_v', cfg.padding_v);
   $('padOut').textContent = padText();

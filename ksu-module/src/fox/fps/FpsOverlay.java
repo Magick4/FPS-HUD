@@ -417,6 +417,36 @@ public final class FpsOverlay {
             source = vsync;
             log("no kernel fps node found, using vsync counter");
         }
+        applySamplingWindow();
+    }
+
+    /**
+     * Qualcomm's sde-crtc driver averages measured_fps over fps_periodicity_ms
+     * (1000 ms out of the box, 5000 ms max). Shrinking it makes the readout
+     * react to frame drops much faster.
+     */
+    private static void applySamplingWindow() {
+        if (cfg.fpsPeriodMs <= 0 || !(source instanceof SysfsSource)) {
+            return;
+        }
+        File dir = ((SysfsSource) source).file.getParentFile();
+        if (dir == null) {
+            return;
+        }
+        File knob = new File(dir, "fps_periodicity_ms");
+        if (!knob.exists()) {
+            return;
+        }
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(knob);
+            out.write(String.valueOf(cfg.fpsPeriodMs).getBytes("UTF-8"));
+            log("sampling window set to " + cfg.fpsPeriodMs + "ms via " + knob);
+        } catch (Throwable t) {
+            log("could not set sampling window: " + t);
+        } finally {
+            close(out);
+        }
     }
 
     /** Kernel nodes that expose a measured panel frame rate, best first. */
@@ -461,7 +491,7 @@ public final class FpsOverlay {
     }
 
     private static final class SysfsSource implements FpsSource {
-        private final File file;
+        final File file;
 
         SysfsSource(File file) {
             this.file = file;
@@ -599,6 +629,7 @@ public final class FpsOverlay {
         int colorOk = 0xFFFFC107;
         int colorBad = 0xFFFF5252;
         String windowType = "secure";
+        int fpsPeriodMs = 0;
     }
 
     private static boolean reloadConfigIfChanged() {
@@ -646,6 +677,7 @@ public final class FpsOverlay {
         c.colorOk = color(p, "color_ok", c.colorOk);
         c.colorBad = color(p, "color_bad", c.colorBad);
         c.windowType = str(p, "window_type", c.windowType);
+        c.fpsPeriodMs = clamp(integer(p, "fps_period_ms", c.fpsPeriodMs), 0, 5000);
         if ("none".equalsIgnoreCase(c.label)) {
             c.label = "";
         }

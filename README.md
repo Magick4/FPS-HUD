@@ -30,9 +30,16 @@ straight into `WindowManager` and keeps it above games, video and the launcher.
 * Any chipset — Snapdragon devices get the exact panel frame rate from the
   kernel, everything else falls back to a vsync counter
 
+Verified against the kernel sources of **LineageOS 23.2 (Android 16) for the
+Motorola Edge+ 2022 / Edge 30 Pro (`hiphi`, SM8475)**: its `sde_crtc` driver
+registers `measured_fps` on the DRM class, so the node lands at
+`/sys/class/drm/sde-crtc-0/measured_fps` and prints
+`fps: 143.87 duration:1000 frame_count:144` — exactly the format this module
+parses.
+
 ## Install
 
-1. Grab the flashable zip: [`dist/fox_live_fps-v2.0.0.zip`](dist/) (prebuilt), or
+1. Grab the flashable zip: [`dist/fox_live_fps-v2.1.0.zip`](dist/) (prebuilt), or
    from the [Actions artifacts](../../actions/workflows/build-ksu.yml).
 2. KernelSU-Next → **Modules → Install from storage** → pick the zip.
 3. Reboot (or run `su -c "fpshud start"` right away).
@@ -42,7 +49,7 @@ Building it yourself needs a JDK and the Android SDK:
 
 ```bash
 cd ksu-module
-ANDROID_HOME=~/Android/Sdk ./build.sh   # -> build/fox_live_fps-v2.0.0.zip
+ANDROID_HOME=~/Android/Sdk ./build.sh   # -> build/fox_live_fps-v2.1.0.zip
 ```
 
 ## How the FPS number is measured
@@ -86,6 +93,7 @@ the overlay notices the file changed and repaints without restarting.
 | `source` | `auto` | `auto`, `vsync` or `node` |
 | `node` | | sysfs path when `source=node` |
 | `interval` | `500` | text refresh, ms (100–5000) |
+| `fps_period_ms` | `0` | Snapdragon: kernel averaging window; 0 keeps the 1 s default |
 | `position` | `top_left` | `top/middle/bottom` × `left/center/right` |
 | `x`, `y` | `16` | offset from that corner, dp |
 | `text_size` | `13` | sp |
@@ -114,6 +122,7 @@ other two. The overlay tries all three in order and logs which one stuck.
 | Nothing appears | `su -c "fpshud log"` — the log says which window type was rejected and why |
 | Shows `--` | No kernel node and vsync isn't ticking; try `fpshud set source vsync`, or check `fpshud probe` |
 | Reads 0 while idle | Normal: `measured_fps` reports 0 when the panel isn't committing frames |
+| Number reacts slowly | `fpshud set fps_period_ms 250` — shrinks the kernel's averaging window |
 | Not in screen recordings | `fpshud set window_type system` |
 | Gone after an update | Module updates keep `/data/adb/fox_live_fps/config.prop`; just reboot |
 

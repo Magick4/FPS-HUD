@@ -15,6 +15,10 @@ node=
 # refresh interval of the HUD text, in milliseconds (100-5000)
 interval=500
 
+# Qualcomm only: how long the kernel averages measured_fps over, in ms.
+# 0 leaves the kernel default (1000 ms) alone; 250-500 reacts much faster.
+fps_period_ms=0
+
 # placement: top_left top_center top_right middle_left middle_center
 #            middle_right bottom_left bottom_center bottom_right
 position=top_left

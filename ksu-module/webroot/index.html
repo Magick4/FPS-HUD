@@ -162,6 +162,13 @@
         <input type="range" id="interval" min="100" max="2000" step="50" />
       </div>
 
+      <div class="field">
+        <label>Kernel sampling window <output id="fps_period_msOut">kernel default</output></label>
+        <input type="range" id="fps_period_ms" min="0" max="2000" step="250" />
+      </div>
+      <p class="hint">Snapdragon averages <code>measured_fps</code> over 1 second by
+        default. A shorter window makes drops show up almost instantly.</p>
+
       <div class="row">
         <label>Window layer</label>
         <div class="seg" id="window_type">
