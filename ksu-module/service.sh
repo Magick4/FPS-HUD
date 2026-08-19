@@ -1,11 +1,6 @@
 #!/system/bin/sh
+# Late-start service: wait for boot, then bring the HUD up and keep it alive.
 MODDIR=${0%/*}
+export PATH=/system/bin:/system/xbin:$PATH
 
-# Wait for boot to finish so WindowManager is ready
-while [ "$(getprop sys.boot_completed)" != "1" ]; do
-    sleep 1
-done
-
-# Launch the app_process payload in the background
-export CLASSPATH=$MODDIR/fps_overlay.dex
-app_process /system/bin fox.fps.FpsOverlay &
+nohup sh "$MODDIR/system/bin/fpshud" boot >/dev/null 2>&1 &

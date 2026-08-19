@@ -1,0 +1,80 @@
+# Improved CI for the Live FPS HUD module.
+#
+# The Arena agent cannot push files under .github/workflows (GitHub blocks
+# GitHub Apps without the "workflows" permission), so this copy lives here.
+# To apply it:
+#
+#   cp ci/build-ksu.yml .github/workflows/build-ksu.yml
+#   git commit -am "ci: build against API 36" && git push
+#
+# Changes vs. the current workflow: builds against Android 16 (API 36),
+# runs on pull requests and arena/* branches, verifies the zip contents,
+# names the artifact after the module version, attaches zips to tag releases.
+
+name: Build KernelSU Module
+
+on:
+  push:
+    branches: [main, ksu-module, 'arena/**']
+    paths:
+      - 'ksu-module/**'
+      - '.github/workflows/build-ksu.yml'
+  pull_request:
+    paths:
+      - 'ksu-module/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install platform + build tools (Android 16 / API 36)
+        run: sdkmanager "build-tools;36.0.0" "platforms;android-36"
+
+      - name: Build module zip
+        run: |
+          cd ksu-module
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Read module version
+        id: mod
+        run: echo "version=$(grep -m1 '^version=' ksu-module/module.prop | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+
+      - name: Sanity check the package
+        run: |
+          cd ksu-module/build
+          zip=$(ls *.zip)
+          for f in module.prop customize.sh service.sh action.sh uninstall.sh \
+                   fps_overlay.dex system/bin/fpshud webroot/index.html \
+                   webroot/app.js webroot/style.css config.default.prop; do
+            unzip -l "$zip" | grep -q " $f\$" || { echo "::error::missing $f in $zip"; exit 1; }
+          done
+          echo "package contents verified"
+
+      - name: Upload flashable zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: fox_live_fps-${{ steps.mod.outputs.version }}
+          path: ksu-module/build/*.zip
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ksu-module/build/*.zip

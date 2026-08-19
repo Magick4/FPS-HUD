@@ -1,0 +1,57 @@
+# Live FPS HUD - default configuration
+# Copied to /data/adb/fox_live_fps/config.prop on first install.
+# Every value is hot-reloaded: save the file and the HUD updates instantly.
+
+# master switch
+enabled=true
+
+# fps source: auto | sysfs | vsync | node
+#   auto  - use a kernel fps node if one exists, otherwise the vsync counter
+#   vsync - count Choreographer vsyncs (works everywhere, follows the panel)
+#   node  - read the file set in "node" below
+source=auto
+node=
+
+# refresh interval of the HUD text, in milliseconds (100-5000)
+interval=500
+
+# Qualcomm only: how long the kernel averages measured_fps over, in ms.
+# 0 leaves the kernel default (1000 ms) alone; 250-500 reacts much faster.
+fps_period_ms=0
+
+# placement: top_left top_center top_right middle_left middle_center
+#            middle_right bottom_left bottom_center bottom_right
+position=top_left
+# offsets from that corner, in dp
+x=16
+y=16
+
+# looks
+text_size=13
+text_color=#00E676
+bg_color=#99000000
+bg_radius=8
+padding_h=8
+padding_v=3
+opacity=1
+# text in front of the number, "none" for just the digits
+label=FPS
+# also show the current panel refresh rate
+show_hz=false
+# 0, 1 or 2 decimal places
+decimals=0
+
+# colour the number by how close it is to the panel refresh rate
+dynamic_color=false
+color_good=#00E676
+color_ok=#FFC107
+color_bad=#FF5252
+
+# window layer: secure | system | overlay
+#   secure  - top layer, but Android strips it from screenshots/recordings
+#   system  - top layer and captured by screenshots/recordings
+#   overlay - ordinary app overlay, fallback for picky ROMs
+window_type=secure
+
+# seconds to wait after boot before showing the HUD
+boot_delay=10

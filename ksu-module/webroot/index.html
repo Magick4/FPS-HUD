@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Live FPS HUD</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">▮▯</span>
+      <div>
+        <h1>Live FPS HUD</h1>
+        <p id="subtitle">loading…</p>
+      </div>
+    </div>
+    <div class="live">
+      <span id="pill" class="pill off">…</span>
+      <span id="liveFps" class="live-fps">--</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- preview ------------------------------------------------------- -->
+    <section class="card preview-card">
+      <div id="screen" class="screen">
+        <div id="previewHud" class="preview-hud">FPS 60</div>
+        <span class="screen-hint">preview</span>
+      </div>
+      <div class="row switch-row">
+        <div>
+          <b>HUD enabled</b>
+          <small id="enabledHint">overlay is drawn on top of everything</small>
+        </div>
+        <label class="switch"><input type="checkbox" id="enabled" /><span></span></label>
+      </div>
+    </section>
+
+    <!-- position ------------------------------------------------------ -->
+    <section class="card">
+      <h2>Position</h2>
+      <div class="grid9" id="grid">
+        <button data-pos="top_left"></button>
+        <button data-pos="top_center"></button>
+        <button data-pos="top_right"></button>
+        <button data-pos="middle_left"></button>
+        <button data-pos="middle_center"></button>
+        <button data-pos="middle_right"></button>
+        <button data-pos="bottom_left"></button>
+        <button data-pos="bottom_center"></button>
+        <button data-pos="bottom_right"></button>
+      </div>
+      <div class="field">
+        <label>Horizontal offset <output id="xOut">16 dp</output></label>
+        <input type="range" id="x" min="0" max="200" step="1" />
+      </div>
+      <div class="field">
+        <label>Vertical offset <output id="yOut">16 dp</output></label>
+        <input type="range" id="y" min="0" max="200" step="1" />
+      </div>
+    </section>
+
+    <!-- appearance ---------------------------------------------------- -->
+    <section class="card">
+      <h2>Appearance</h2>
+
+      <div class="field">
+        <label>Text size <output id="text_sizeOut">13 sp</output></label>
+        <input type="range" id="text_size" min="6" max="40" step="1" />
+      </div>
+
+      <div class="row">
+        <label for="label">Label</label>
+        <input class="text" type="text" id="label" placeholder="FPS" maxlength="12" />
+      </div>
+
+      <div class="row">
+        <label>Decimals</label>
+        <div class="seg" id="decimals">
+          <button data-val="0">0</button>
+          <button data-val="1">0.0</button>
+          <button data-val="2">0.00</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div><b>Show refresh rate</b><small>append the panel Hz next to the fps</small></div>
+        <label class="switch"><input type="checkbox" id="show_hz" /><span></span></label>
+      </div>
+
+      <div class="row">
+        <label for="text_color">Text colour</label>
+        <span class="colorwrap"><input type="color" id="text_color" /></span>
+      </div>
+
+      <div class="swatches" id="swatches">
+        <button style="--c:#00E676" data-color="#00E676"></button>
+        <button style="--c:#FFFFFF" data-color="#FFFFFF"></button>
+        <button style="--c:#FFC107" data-color="#FFC107"></button>
+        <button style="--c:#FF5252" data-color="#FF5252"></button>
+        <button style="--c:#40C4FF" data-color="#40C4FF"></button>
+        <button style="--c:#E040FB" data-color="#E040FB"></button>
+      </div>
+
+      <div class="row">
+        <div><b>Colour by performance</b><small>green near the panel rate, red when it drops</small></div>
+        <label class="switch"><input type="checkbox" id="dynamic_color" /><span></span></label>
+      </div>
+      <div class="row sub" id="dynRow" hidden>
+        <span class="colorwrap sm"><input type="color" id="color_good" /></span>
+        <span class="colorwrap sm"><input type="color" id="color_ok" /></span>
+        <span class="colorwrap sm"><input type="color" id="color_bad" /></span>
+      </div>
+
+      <div class="row">
+        <label for="bg_rgb">Background</label>
+        <span class="colorwrap"><input type="color" id="bg_rgb" /></span>
+      </div>
+      <div class="field">
+        <label>Background opacity <output id="bgAlphaOut">60%</output></label>
+        <input type="range" id="bgAlpha" min="0" max="100" step="1" />
+      </div>
+      <div class="field">
+        <label>Corner radius <output id="bg_radiusOut">8 dp</output></label>
+        <input type="range" id="bg_radius" min="0" max="30" step="1" />
+      </div>
+      <div class="field">
+        <label>Padding <output id="padOut">8 × 3</output></label>
+        <div class="two">
+          <input type="range" id="padding_h" min="0" max="30" step="1" />
+          <input type="range" id="padding_v" min="0" max="30" step="1" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Overall opacity <output id="opacityOut">100%</output></label>
+        <input type="range" id="opacity" min="20" max="100" step="1" />
+      </div>
+    </section>
+
+    <!-- engine -------------------------------------------------------- -->
+    <section class="card">
+      <h2>Engine</h2>
+
+      <div class="row">
+        <label>FPS source</label>
+        <div class="seg" id="source">
+          <button data-val="auto">Auto</button>
+          <button data-val="vsync">Vsync</button>
+          <button data-val="node">Node</button>
+        </div>
+      </div>
+      <div class="row sub" id="nodeRow" hidden>
+        <select id="node" class="text"></select>
+      </div>
+      <p class="hint" id="sourceHint">—</p>
+
+      <div class="field">
+        <label>Update interval <output id="intervalOut">500 ms</output></label>
+        <input type="range" id="interval" min="100" max="2000" step="50" />
+      </div>
+
+      <div class="field">
+        <label>Kernel sampling window <output id="fps_period_msOut">kernel default</output></label>
+        <input type="range" id="fps_period_ms" min="0" max="2000" step="250" />
+      </div>
+      <p class="hint">Snapdragon averages <code>measured_fps</code> over 1 second by
+        default. A shorter window makes drops show up almost instantly.</p>
+
+      <div class="row">
+        <label>Window layer</label>
+        <div class="seg" id="window_type">
+          <button data-val="secure">Secure</button>
+          <button data-val="system">System</button>
+          <button data-val="overlay">App</button>
+        </div>
+      </div>
+      <p class="hint">Secure sits above everything, but Android strips it from
+        screenshots and screen recordings — pick <b>System</b> if you want the
+        counter captured. App is a fallback for ROMs that refuse the other two.</p>
+    </section>
+
+    <!-- actions ------------------------------------------------------- -->
+    <section class="card">
+      <h2>Control</h2>
+      <div class="buttons">
+        <button class="btn primary" id="btnRestart">Restart HUD</button>
+        <button class="btn" id="btnProbe">Diagnostics</button>
+        <button class="btn" id="btnLog">Log</button>
+        <button class="btn danger" id="btnReset">Reset settings</button>
+      </div>
+      <pre id="console" hidden></pre>
+    </section>
+
+    <footer>
+      <span id="version">…</span> · settings live in
+      <code>/data/adb/fox_live_fps/config.prop</code> · CLI: <code>su -c fpshud</code>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+
+</html>

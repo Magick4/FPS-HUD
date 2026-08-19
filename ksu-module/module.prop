@@ -1,6 +1,6 @@
 id=fox_live_fps
-name=Live FPS Overlay
-version=v1.0
-versionCode=1
+name=Live FPS HUD
+version=v2.1.0
+versionCode=20100
 author=Fox
-description=Displays a live FPS overlay using app_process.
+description=[ Tap Action to toggle | open WebUI to configure ] Draws a live FPS counter straight into WindowManager from a root process - no app to install, no draw-over-other-apps permission. Reads the panel fps node on Snapdragon (sde-crtc measured_fps) and falls back to a vsync counter on any other device.
