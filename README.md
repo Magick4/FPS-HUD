@@ -39,7 +39,7 @@ parses.
 
 ## Install
 
-1. Grab the flashable zip: [`dist/fox_live_fps-v2.1.0.zip`](dist/) (prebuilt), or
+1. Grab the flashable zip: [`dist/fox_live_fps-v2.2.0.zip`](dist/) (prebuilt), or
    from the [Actions artifacts](../../actions/workflows/build-ksu.yml).
 2. KernelSU-Next → **Modules → Install from storage** → pick the zip.
 3. Reboot (or run `su -c "fpshud start"` right away).
@@ -49,7 +49,7 @@ Building it yourself needs a JDK and the Android SDK:
 
 ```bash
 cd ksu-module
-ANDROID_HOME=~/Android/Sdk ./build.sh   # -> build/fox_live_fps-v2.1.0.zip
+ANDROID_HOME=~/Android/Sdk ./build.sh   # -> build/fox_live_fps-v2.2.0.zip
 ```
 
 ## How the FPS number is measured
