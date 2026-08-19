@@ -1,0 +1,288 @@
+#!/system/bin/sh
+#
+# fpshud - control CLI for the Live FPS HUD module.
+# Usable from any root shell (adb shell su, Termux) and from the WebUI.
+#
+#   fpshud start|stop|restart|toggle|status|log
+#   fpshud get [key] | set <key> <value> | reset
+#   fpshud fps | probe | boot
+#
+MODID=fox_live_fps
+MODDIR=/data/adb/modules/$MODID
+DATADIR=/data/adb/$MODID
+CONFIG=$DATADIR/config.prop
+DEFAULTS=$MODDIR/config.default.prop
+DEX=$MODDIR/fps_overlay.dex
+LOGFILE=$DATADIR/fpshud.log
+PIDFILE=$DATADIR/pid
+CLASS=fox.fps.FpsOverlay
+NICENAME=fps_hud
+
+[ -d "$MODDIR" ] || MODDIR=/data/adb/modules_update/$MODID
+mkdir -p "$DATADIR" 2>/dev/null
+
+# --------------------------------------------------------------------------
+# config helpers (simple key=value, hot-reloaded by the overlay process)
+# --------------------------------------------------------------------------
+
+cfg_get() {
+	_v=$(grep -m1 "^$1=" "$CONFIG" 2>/dev/null | cut -d= -f2-)
+	if [ -z "$_v" ]; then
+		_v=$(grep -m1 "^$1=" "$DEFAULTS" 2>/dev/null | cut -d= -f2-)
+	fi
+	[ -z "$_v" ] && _v="$2"
+	echo "$_v"
+}
+
+cfg_set() {
+	_k=$1
+	shift
+	_v=$*
+	[ -f "$CONFIG" ] || cfg_reset
+	_tmp="$CONFIG.tmp"
+	grep -v "^$_k=" "$CONFIG" 2>/dev/null >"$_tmp"
+	echo "$_k=$_v" >>"$_tmp"
+	mv -f "$_tmp" "$CONFIG"
+	chmod 0644 "$CONFIG"
+}
+
+cfg_reset() {
+	if [ -f "$DEFAULTS" ]; then
+		cat "$DEFAULTS" >"$CONFIG"
+	else
+		: >"$CONFIG"
+	fi
+	chmod 0644 "$CONFIG"
+}
+
+cfg_dump() {
+	# defaults first, then whatever the user overrode (last value of a key wins)
+	{
+		[ -f "$DEFAULTS" ] && cat "$DEFAULTS"
+		[ -f "$CONFIG" ] && cat "$CONFIG"
+	} 2>/dev/null | awk -F= '
+		/^[[:space:]]*#/ { next }
+		/=/ {
+			key = $1
+			sub(/^[^=]*=/, "", $0)
+			if (!(key in val)) keys[++n] = key
+			val[key] = $0
+		}
+		END { for (i = 1; i <= n; i++) printf "%s=%s\n", keys[i], val[keys[i]] }'
+}
+
+# --------------------------------------------------------------------------
+# process helpers
+# --------------------------------------------------------------------------
+
+cmdline_of() {
+	tr '\0' ' ' <"/proc/$1/cmdline" 2>/dev/null
+}
+
+overlay_pid() {
+	_pid=$(cat "$PIDFILE" 2>/dev/null)
+	if [ -n "$_pid" ] && [ -d "/proc/$_pid" ]; then
+		case "$(cmdline_of "$_pid")" in
+		*$NICENAME* | *$CLASS*)
+			echo "$_pid"
+			return 0
+			;;
+		esac
+	fi
+	for _pid in $(pgrep -f "$CLASS" 2>/dev/null) $(pgrep "$NICENAME" 2>/dev/null); do
+		if [ -d "/proc/$_pid" ]; then
+			echo "$_pid"
+			return 0
+		fi
+	done
+	return 1
+}
+
+start() {
+	if overlay_pid >/dev/null; then
+		echo "already running (pid $(overlay_pid))"
+		return 0
+	fi
+	if [ ! -f "$DEX" ]; then
+		echo "error: $DEX is missing - reinstall the module"
+		return 1
+	fi
+	[ -f "$CONFIG" ] || cfg_reset
+	# keep the log from growing forever
+	if [ -f "$LOGFILE" ] && [ "$(stat -c %s "$LOGFILE" 2>/dev/null || echo 0)" -gt 65536 ]; then
+		: >"$LOGFILE"
+	fi
+	export CLASSPATH="$DEX"
+	nohup app_process -Djava.class.path="$DEX" /system/bin \
+		--nice-name=$NICENAME $CLASS >>"$LOGFILE" 2>&1 &
+	echo $! >"$PIDFILE"
+	sleep 1
+	if overlay_pid >/dev/null; then
+		echo "started (pid $(overlay_pid))"
+	else
+		echo "failed to start - see: fpshud log"
+		return 1
+	fi
+}
+
+stop() {
+	_pid=$(overlay_pid)
+	while [ -n "$_pid" ]; do
+		kill "$_pid" 2>/dev/null
+		sleep 1
+		[ -d "/proc/$_pid" ] && kill -9 "$_pid" 2>/dev/null
+		_pid=$(overlay_pid)
+	done
+	rm -f "$PIDFILE"
+	echo "stopped"
+}
+
+# --------------------------------------------------------------------------
+# fps sources
+# --------------------------------------------------------------------------
+
+candidates() {
+	for _d in /sys/class/drm/sde-crtc-* /sys/class/drm/crtc-*; do
+		[ -e "$_d/measured_fps" ] && echo "$_d/measured_fps"
+	done
+	for _f in /sys/class/graphics/fb0/measured_fps \
+		/sys/devices/virtual/graphics/fb0/measured_fps \
+		/sys/class/drm/card0/measured_fps \
+		/proc/mtkfb/fps \
+		/sys/kernel/debug/mtkfb/fps \
+		/sys/class/mtk_disp_mgr/fps; do
+		[ -e "$_f" ] && echo "$_f"
+	done
+}
+
+parse_fps() {
+	# "fps: 119.87 duration:1000 frame_count:120" -> 119.87 ; "60" -> 60
+	head -n1 2>/dev/null | sed 's/.*[Ff][Pp][Ss]:*//' |
+		grep -oE '[0-9]+(\.[0-9]+)?' | head -n1
+}
+
+active_node() {
+	_src=$(cfg_get source auto)
+	_node=$(cfg_get node "")
+	if [ "$_src" = "node" ] && [ -n "$_node" ] && [ -e "$_node" ]; then
+		echo "$_node"
+		return 0
+	fi
+	[ "$_src" = "vsync" ] && return 1
+	candidates | while read -r _c; do
+		if [ -n "$(cat "$_c" 2>/dev/null | parse_fps)" ]; then
+			echo "$_c"
+			break
+		fi
+	done
+}
+
+current_fps() {
+	_n=$(active_node)
+	if [ -n "$_n" ]; then
+		cat "$_n" 2>/dev/null | parse_fps
+	fi
+}
+
+probe() {
+	echo "device  : $(getprop ro.product.model) [$(getprop ro.board.platform)]"
+	echo "android : $(getprop ro.build.version.release) (sdk $(getprop ro.build.version.sdk))"
+	echo "rom     : $(getprop ro.build.display.id)"
+	echo ""
+	echo "kernel fps nodes:"
+	if [ -z "$(candidates)" ]; then
+		echo "  none found - the HUD will use the vsync counter instead"
+	else
+		candidates | while read -r _c; do
+			echo "  $_c = $(head -n1 "$_c" 2>/dev/null)"
+		done
+	fi
+	return 0
+}
+
+status() {
+	_pid=$(overlay_pid)
+	_running=false
+	[ -n "$_pid" ] && _running=true
+	case "$(cfg_get enabled true)" in
+	true | 1 | on | yes) _enabled=true ;;
+	*) _enabled=false ;;
+	esac
+	_fps=$(current_fps)
+	_node=$(active_node)
+	printf '{"running":%s,"pid":"%s","enabled":%s,"source":"%s","node":"%s","fps":"%s","version":"%s"}\n' \
+		"$_running" "$_pid" "$_enabled" "$(cfg_get source auto)" \
+		"$_node" "$_fps" "$(grep -m1 '^version=' "$MODDIR/module.prop" 2>/dev/null | cut -d= -f2)"
+}
+
+# --------------------------------------------------------------------------
+# boot / watchdog
+# --------------------------------------------------------------------------
+
+boot() {
+	while [ "$(getprop sys.boot_completed)" != "1" ]; do
+		sleep 2
+	done
+	# give SystemUI/WindowManager a moment before we push a window at it
+	sleep "$(cfg_get boot_delay 10)"
+	[ "$(cfg_get enabled true)" = "true" ] && start
+	while true; do
+		sleep 15
+		if [ "$(cfg_get enabled true)" = "true" ] && ! overlay_pid >/dev/null; then
+			echo "watchdog: overlay died, restarting" >>"$LOGFILE"
+			start >>"$LOGFILE" 2>&1
+		fi
+	done
+}
+
+# --------------------------------------------------------------------------
+
+case "$1" in
+start) start ;;
+stop) stop ;;
+restart)
+	stop
+	start
+	;;
+toggle)
+	if [ "$(cfg_get enabled true)" = "true" ]; then
+		cfg_set enabled false
+		echo "HUD disabled"
+	else
+		cfg_set enabled true
+		echo "HUD enabled"
+		overlay_pid >/dev/null || start
+	fi
+	;;
+enable)
+	cfg_set enabled true
+	overlay_pid >/dev/null || start
+	echo "HUD enabled"
+	;;
+disable)
+	cfg_set enabled false
+	echo "HUD disabled"
+	;;
+status) status ;;
+get)
+	if [ -n "$2" ]; then cfg_get "$2" ""; else cfg_dump; fi
+	;;
+set)
+	cfg_set "$2" "$3"
+	echo "$2=$3"
+	;;
+reset)
+	cfg_reset
+	echo "config reset to defaults"
+	;;
+fps) current_fps ;;
+probe) probe ;;
+log) tail -n "${2:-60}" "$LOGFILE" 2>/dev/null ;;
+boot) boot ;;
+*)
+	echo "fpshud - Live FPS HUD control"
+	echo "usage: fpshud {start|stop|restart|toggle|enable|disable|status|fps|probe|log|reset}"
+	echo "       fpshud get [key]"
+	echo "       fpshud set <key> <value>"
+	;;
+esac

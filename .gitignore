@@ -1,0 +1,5 @@
+# build output
+ksu-module/build/
+*.dex
+*.class
+*.zip
